@@ -26,38 +26,47 @@ public class MyArrayBlockingQueue<T> {
 
     public void put(T o) throws InterruptedException {
         lock.lock();
-        while (size == capacity) {
-            p.await();
+        try {
+            while (size == capacity) {
+                p.await();
+            }
+            list.add(o);
+            size++;
+            c.signalAll();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            lock.unlock();
         }
-        list.add(o);
-        size++;
-        c.signalAll();
-        lock.unlock();
     }
 
     public T take() throws InterruptedException {
         lock.lock();
-        while (list.isEmpty()) {
-            c.await();
-        }
+        try {
+            while (list.isEmpty()) {
+                c.await();
+            }
 
-        T t = list.remove(0);
-        size--;
-        p.signalAll();
-        lock.unlock();
-        return t;
+            T t = list.remove(0);
+            size--;
+            p.signalAll();
+            return t;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            lock.unlock();
+        }
     }
 
     public int size() {
         lock.lock();
         try {
             return size;
-        } catch (Exception e) {
-            e.printStackTrace();
         } finally {
             lock.unlock();
         }
-        return -1;
     }
 
     /**
